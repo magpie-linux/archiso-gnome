@@ -18,7 +18,7 @@ class MainWork():
         with open('version.json', 'r') as file:
             self.verInfo = json.loads(file.read())
 
-        with open('build.sample', 'r') as file:
+        with open('build.sample.sh', 'r') as file:
             self.scriptData = file.read()
 
         self.clean()
