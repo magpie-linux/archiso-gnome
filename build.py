@@ -75,28 +75,28 @@ class MainWork():
             file.write(self.scriptData)
         subprocess.call('chmod +x build.sh', shell=True)
         subprocess.call('mkdir -v airootfs/root', shell=True)
-        subprocess.call('sudo chmod 777 airootfs/root', shell=True)
+        subprocess.call('chmod 777 airootfs/root', shell=True)
         subprocess.call('cp -vf root_customizer.sh airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('cp -vf .automated_script.sh airootfs/root/.automated_script.sh', shell=True)
-        subprocess.call('sudo chmod +x airootfs/root/customize_airootfs.sh', shell=True)
-        subprocess.call('sudo chmod 777 airootfs/root/customize_airootfs.sh', shell=True)
+        subprocess.call('chmod +x airootfs/root/customize_airootfs.sh', shell=True)
+        subprocess.call('chmod 777 airootfs/root/customize_airootfs.sh', shell=True)
 
     def runCommand(self):
         check = int(1)
-        check = os.system('sudo ./build.sh -v')
+        check = os.system('./build.sh -v')
         if check is 0:
-            os.system('sudo chmod 777 ISO_Image ISO_Image/*')
+            os.system('chmod 777 ISO_Image ISO_Image/*')
 
     def clean(self):
         clean()
 
 
 def clean():
-	subprocess.call('sudo rm -rf airootfs/root', shell=True)
-	subprocess.call('sudo rm -rf build.sh build_work', shell = True)
-	subprocess.call('sudo rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell = True)
-	subprocess.call('sudo rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell = True)
-	subprocess.call('sudo rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell = True)
+	subprocess.call('rm -rf airootfs/root', shell=True)
+	subprocess.call('rm -rf build.sh build_work', shell = True)
+	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell = True)
+	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell = True)
+	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell = True)
 
 def main():
     arg: list = sys.argv

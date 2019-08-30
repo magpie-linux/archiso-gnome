@@ -64,19 +64,23 @@ make_pacman_conf() {
 make_basefs() {
     mkarchiso ${verbose} -w "${work_dir}/x86_64" -C "${work_dir}/pacman.conf" -D "${install_dir}" init
     mkarchiso ${verbose} -w "${work_dir}/x86_64" -C "${work_dir}/pacman.conf" -D "${install_dir}" -p "haveged intel-ucode amd-ucode memtest86+ mkinitcpio-nfs-utils nbd zsh efitools" install
-    # Adding magpie pacman.conf on airootfs
-	cp -f pacman.conf "${work_dir}/${arch}/airootfs/etc/"
+}
+
+# Additional packages (airootfs)
+make_packages() {
+	# Adding magpie pacman.conf on airootfs
+	cp -vf pacman.conf "${work_dir}/${arch}/airootfs/etc/"
 	# Adding magpie pamac.conf on airootfs
-	cp -f pamac.conf "${work_dir}/${arch}/airootfs/etc/"
+	cp -vf pamac.conf "${work_dir}/${arch}/airootfs/etc/"
+ 	# Adding magpie mirrorlist on airootfs
+	cp -vf mirrorlist "${work_dir}/${arch}/airootfs/etc/pacman.d/"
+	# Synchronizing package databases on airootfs
+	arch-chroot "${work_dir}/${arch}/airootfs" pacman -Syyu --noconfirm
  	# Magpie kernel installation on airootfs
  	# arch-chroot "${work_dir}/${arch}/airootfs" pacman -R linux --noconfirm > /dev/null
   	# arch-chroot "${work_dir}/${arch}/airootfs" pacman -S linux-magpie --noconfirm
   	# arch-chroot "${work_dir}/${arch}/airootfs" pacman -S linux-magpie-headers --noconfirm
   	# arch-chroot "${work_dir}/${arch}/airootfs" pacman -S linux-magpie-docs --noconfirm
-}
-
-# Additional packages (airootfs)
-make_packages() {
     mkarchiso ${verbose} -w "${work_dir}/x86_64" -C "${work_dir}/pacman.conf" -D "${install_dir}" -p "$(grep -h -v ^# ${script_path}/packages.x86_64)" install
 }
 
