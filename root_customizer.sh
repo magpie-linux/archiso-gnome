@@ -69,8 +69,9 @@ pacman -R --noconfirm gnome-klotski gnome-taquin iagno lightsoff polari gnome-mu
 # # ############################################################################################################
 
 # ############ Installing custom packages to rootfs ###############
-cd /etc/skel/.magpie-packages
+cp -vf /etc/skel/.magpie-settings/mirrorlist /etc/pacman.d/
 pacman -Syyu --noconfirm
+cd /etc/skel/.magpie-packages
 pacman -U --noconfirm *.pkg.tar.xz
 # #################################################################
 
