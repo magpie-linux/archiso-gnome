@@ -72,14 +72,14 @@ class MainWork:
             file.write(self.scriptData)
         subprocess.call('chmod +x build.sh', shell=True)
         subprocess.call('mkdir -v airootfs/root', shell=True)
-        subprocess.call('chmod 777 airootfs/root', shell=True)
+        # subprocess.call('chmod 777 airootfs/root', shell=True)
         subprocess.call('cp -vf root_customizer.sh airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('cp -vf .automated_script.sh airootfs/root/.automated_script.sh', shell=True)
         subprocess.call('chmod +x airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('chmod 777 airootfs/root/customize_airootfs.sh', shell=True)
 
     def __copyPackages(self):
-        subprocess.call('cp -vf packages airootfs/etc/skel/', shell=True)
+        subprocess.call('cp -avr packages airootfs/etc/skel/', shell=True)
 
     def __runCommand(self):
         check: int = os.system('./build.sh -v')
@@ -97,6 +97,7 @@ def clean():
     subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell=True)
     subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell=True)
     subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell=True)
+    print('Cleaned..')
 
 
 def main():
@@ -105,7 +106,6 @@ def main():
         try:
             if len(arg) != 0 and arg[1] == 'clean':
                 clean()
-                print('Cleaned..')
                 return
         except IndexError:
             pass
