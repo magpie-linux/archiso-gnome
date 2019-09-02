@@ -1,0 +1,7 @@
+##
+## MagpieOS repository mirrorlist
+## Generated with Mirrorlist Manager on 2019-08-30
+##
+
+## Bangladesh
+Server = http://mirror.xeonbd.com/archlinux/$repo/os/$arch

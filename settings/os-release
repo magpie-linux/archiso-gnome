@@ -1,0 +1,10 @@
+NAME="MagpieOS"
+PRETTY_NAME="MagpieOS"
+ID=arch
+BUILD_ID=rolling
+ANSI_COLOR="0;36"
+HOME_URL="http://magpieos.net/"
+DOCUMENTATION_URL="http://magpieos.net/"
+SUPPORT_URL="https://bbs.archlinux.org/"
+BUG_REPORT_URL="https://bugs.archlinux.org/"
+LOGO=magpieos
