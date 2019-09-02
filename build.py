@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 import json
-import shlex
+import os
 import subprocess
+import sys
 
 
-class MainWork():
+class MainWork:
 
     def __init__(self):
         self.lsb_release = None
@@ -30,7 +29,7 @@ class MainWork():
 
     def __distroInfoProcess(self):
         self.lsb_release = (
-            """LSB_VERSION=1.4
+                """LSB_VERSION=1.4
         DISTRIB_ID=""" + self.verInfo['distro name'] + """
         DISTRIB_RELEASE=""" + self.verInfo['version'] + """
         DISTRIB_CODENAME=""" + self.verInfo['codename'] + """
@@ -38,7 +37,7 @@ class MainWork():
         )
         self.magpie_release = self.verInfo['distro name'] + " " + self.verInfo['codename']
         self.os_release = (
-            """NAME=""" + self.verInfo['distro name'] + """
+                """NAME=""" + self.verInfo['distro name'] + """
         PRETTY_NAME=""" + self.verInfo['pretty name'] + """
         ID=""" + self.verInfo['distro name'] + """
         ID_LIKE=""" + self.verInfo['base'] + """
@@ -83,8 +82,7 @@ class MainWork():
         subprocess.call('cp -vf packages airootfs/etc/skel/', shell=True)
 
     def __runCommand(self):
-        check = int(1)
-        check = os.system('./build.sh -v')
+        check: int = os.system('./build.sh -v')
         if check is 0:
             os.system('chmod 777 ISO_Image ISO_Image/*')
 
@@ -93,18 +91,19 @@ class MainWork():
 
 
 def clean():
-	subprocess.call('rm -rf airootfs/root', shell=True)
-	subprocess.call('rm -rf build.sh build_work', shell = True)
-    subprocess.call('rm -rf airootfs/etc/skel/packages', shell = True)
-	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell = True)
-	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell = True)
-	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell = True)
+    subprocess.call('rm -rf airootfs/root', shell=True)
+    subprocess.call('rm -rf build.sh build_work', shell=True)
+    subprocess.call('rm -rf airootfs/etc/skel/packages', shell=True)
+    subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell=True)
+    subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell=True)
+    subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell=True)
+
 
 def main():
     arg: list = sys.argv
     if os.getuid() is 0:
         try:
-            if(len(arg) != 0 and arg[1] == 'clean'):
+            if len(arg) != 0 and arg[1] == 'clean':
                 clean()
                 print('Cleaned..')
                 return
@@ -121,7 +120,7 @@ def main():
 
 if __name__ == '__main__':
     try:
-    	main()
+        main()
     except Exception as e:
-    	print(e)
+        print(e)
 # End
