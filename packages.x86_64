@@ -75,7 +75,7 @@ unrar
 usb_modeswitch
 vpnc
 wget
-nvim
+neovim
 wireless_tools
 wvdial
 xl2tpd
