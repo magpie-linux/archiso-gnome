@@ -21,14 +21,14 @@ class MainWork():
         with open('build.sample.sh', 'r') as file:
             self.scriptData = file.read()
 
-        self.clean()
-        self.distroInfoProcess()
-        self.scriptBuilding()
-        self.runCommand()
-        self.clean()
+        self.__clean()
+        self.__copyPackages()
+        self.__distroInfoProcess()
+        self.__scriptBuilding()
+        self.__runCommand()
+        self.__clean()
 
-    def distroInfoProcess(self):
-
+    def __distroInfoProcess(self):
         self.lsb_release = (
             """LSB_VERSION=1.4
         DISTRIB_ID=""" + self.verInfo['distro name'] + """
@@ -36,9 +36,7 @@ class MainWork():
         DISTRIB_CODENAME=""" + self.verInfo['codename'] + """
         DISTRIB_DESCRIPTION=""" + "\"" + self.verInfo['distro name'] + "\""
         )
-
         self.magpie_release = self.verInfo['distro name'] + " " + self.verInfo['codename']
-
         self.os_release = (
             """NAME=""" + self.verInfo['distro name'] + """
         PRETTY_NAME=""" + self.verInfo['pretty name'] + """
@@ -58,7 +56,7 @@ class MainWork():
         with open('airootfs/etc/skel/.magpie-settings/' + 'magpie-release', 'w') as file:
             file.write(self.magpie_release)
 
-    def scriptBuilding(self):
+    def __scriptBuilding(self):
         self.scriptData = self.scriptData.replace("#SHELL_LOCATION", "#!/bin/bash")
         self.scriptData = self.scriptData.replace(
             'distro_name="@"', 'distro_name=' + "\"" + self.verInfo['distro name'] + "\"")
@@ -81,19 +79,23 @@ class MainWork():
         subprocess.call('chmod +x airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('chmod 777 airootfs/root/customize_airootfs.sh', shell=True)
 
-    def runCommand(self):
+    def __copyPackages(self):
+        subprocess.call('cp -vf packages airootfs/etc/skel/', shell=True)
+
+    def __runCommand(self):
         check = int(1)
         check = os.system('./build.sh -v')
         if check is 0:
             os.system('chmod 777 ISO_Image ISO_Image/*')
 
-    def clean(self):
+    def __clean(self):
         clean()
 
 
 def clean():
 	subprocess.call('rm -rf airootfs/root', shell=True)
 	subprocess.call('rm -rf build.sh build_work', shell = True)
+    subprocess.call('rm -rf airootfs/etc/skel/packages', shell = True)
 	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/os-release', shell = True)
 	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/lsb-release', shell = True)
 	subprocess.call('rm -rf airootfs/etc/skel/.magpie-settings/magpie-release', shell = True)

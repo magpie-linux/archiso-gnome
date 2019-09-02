@@ -61,19 +61,19 @@ sed -i 's/#\(HandleHibernateKey=\)hibernate/\1ignore/' /etc/systemd/logind.conf
 sed -i 's/#\(HandleLidSwitch=\)suspend/\1ignore/' /etc/systemd/logind.conf
 # #############################################################################
 
-# # ############################# Removing packages ############################################################
+# # ############################# Removing packages ##########################################################
 pacman -R --noconfirm swell-foop tali gnome-mines gnome-tetravex gnome-recipes accerciser gnome-boxes
 pacman -R --noconfirm gnome-nibbles gnome-sudoku hitori quadrapassel gnome-builder devhelp lftp gnome-software
 pacman -R --noconfirm gnome-robots five-or-more four-in-a-row gnome-mahjongg ipython gnome-backgrounds
 pacman -R --noconfirm gnome-klotski gnome-taquin iagno lightsoff polari gnome-multi-writer epiphany 
-# # ############################################################################################################
+# # ##########################################################################################################
 
-# ############ Installing custom packages to rootfs ###############
+# ######### Installing custom packages to rootfs ##########
 cp -vf /etc/skel/.magpie-settings/mirrorlist /etc/pacman.d/
 pacman -Syyu --noconfirm
-cd /etc/skel/.magpie-packages
+cd /etc/skel/packages
 pacman -U --noconfirm *.pkg.tar.xz
-# #################################################################
+# #########################################################
 
 # ### Changing pacman.conf for magpie-mirrrorlist support ##
 rm -drv /etc/pacman.conf
@@ -96,9 +96,9 @@ cp /etc/skel/.magpie-settings/magpie-release /etc/
 cp /etc/skel/.magpie-settings/magpie-release /etc/arch-release
 # ############################################################
 
-# ######### Adding custom mkinitcpio config ##########
+# ######### Adding custom mkinitcpio config ###########
 mv -vf /etc/skel/.magpie-settings/mkinitcpio.conf /etc/
-# ####################################################
+# #####################################################
 
 # ######## Adding custom ntp config ########
 rm /etc/ntp.conf
@@ -131,7 +131,7 @@ cp -f /etc/skel/.magpie-settings/org.freedesktop.UDisks2.policy /usr/share/polki
 
 # ###############################
 rm -dr /etc/skel/.magpie-settings
-rm -dr /etc/skel/.magpie-packages
+rm -dr /etc/skel/packages
 # ###############################
 
 # ## Unmuting speakers ##
