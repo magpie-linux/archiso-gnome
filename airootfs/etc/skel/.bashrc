@@ -77,7 +77,7 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
    
-PS1="$HC$FBLE┌─── $HC$FGRN\u: $FYEL\w\n$HC$FBLE└─────────────>$RS"
+PS1="$HC$FBLE┌─── $HC$FGRN\u: $FYEL\w\n$HC$FBLE└──────>$RS"
 PS2="$FRED> $RS$HC$FMAG"
 unset color_prompt force_color_prompt
 
