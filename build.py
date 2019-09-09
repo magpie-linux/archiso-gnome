@@ -51,7 +51,7 @@ class MainWork:
     def __copyProcess(self):
         subprocess.call('mkdir -v airootfs/root', shell=True)
         # subprocess.call('chmod 777 airootfs/root', shell=True)
-        subprocess.call('cp -vf root_customizer.sh airootfs/root/customize_airootfs.sh', shell=True)
+        subprocess.call('cp -vf archroot_customizer.sh airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('cp -vf automated_script.sh airootfs/root/.automated_script.sh', shell=True)
         subprocess.call('chmod +x airootfs/root/customize_airootfs.sh', shell=True)
         subprocess.call('chmod 777 airootfs/root/customize_airootfs.sh', shell=True)
