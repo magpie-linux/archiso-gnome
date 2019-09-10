@@ -48,10 +48,10 @@ mv -v /etc/skel/settings/os-release /usr/lib/os-release
 # #############################################################
 
 
-# ############## GDM Wayland Disabling ##################
-rm -v /etc/gdm/custom.conf
-mv -v /etc/skel/settings/custom.conf /etc/gdm/custom.conf
-# #######################################################
+# # ############## GDM Wayland Disabling ##################
+# rm -v /etc/gdm/custom.conf
+# mv -v /etc/skel/settings/custom.conf /etc/gdm/custom.conf
+# # #######################################################
 
 
 # ###### Adding grub-theme to /etc/default/grub file ######
@@ -70,12 +70,13 @@ sed -i 's/#\(HandleLidSwitch=\)suspend/\1ignore/' /etc/systemd/logind.conf
 # #############################################################################
 
 
-# # ############################# Removing packages ##########################################################
-pacman -R --noconfirm swell-foop tali gnome-mines gnome-tetravex gnome-recipes accerciser gnome-boxes
-pacman -R --noconfirm gnome-nibbles gnome-sudoku hitori quadrapassel gnome-builder devhelp lftp gnome-software
-pacman -R --noconfirm gnome-robots five-or-more four-in-a-row gnome-mahjongg ipython gnome-backgrounds
-pacman -R --noconfirm gnome-klotski gnome-taquin iagno lightsoff polari gnome-multi-writer epiphany
-# # ##########################################################################################################
+# # # ############################# Removing packages ##########################################################
+# pacman -R --noconfirm swell-foop tali gnome-mines gnome-tetravex gnome-recipes accerciser gnome-boxes
+# pacman -R --noconfirm gnome-nibbles gnome-sudoku hitori quadrapassel gnome-builder devhelp lftp gnome-software
+# pacman -R --noconfirm gnome-robots five-or-more four-in-a-row gnome-mahjongg ipython gnome-backgrounds
+# pacman -R --noconfirm gnome-klotski gnome-taquin iagno lightsoff polari gnome-multi-writer epiphany
+pacman -Rcc brltty --noconfirm
+# # # ##########################################################################################################
 
 
 # ######### Installing custom packages to rootfs ##########
@@ -127,23 +128,23 @@ mv -f /etc/skel/settings/bashrc_root /root/.bashrc
 # ################################################
 
 
-# ###################### Adding MagpieOS Logo in gdm login screen #############################
-sudo -u gdm dbus-launch gsettings set org.gnome.login-screen logo '/etc/skel/.mapieos-logo.png'
-dconf update
-# #############################################################################################
+# # ###################### Adding MagpieOS Logo in gdm login screen #############################
+# sudo -u gdm dbus-launch gsettings set org.gnome.login-screen logo '/etc/skel/.mapieos-logo.png'
+# dconf update
+# # #############################################################################################
 
 
-# ###################### Adding cursor theme in  gdm login screen ########################
-sudo -u gdm dbus-launch gsettings set org.gnome.desktop.interface cursor-theme 'Neon-Blue'
-dconf update
-# ########################################################################################
+# # ###################### Adding cursor theme in  gdm login screen ########################
+# sudo -u gdm dbus-launch gsettings set org.gnome.desktop.interface cursor-theme 'Neon-Blue'
+# dconf update
+# # ########################################################################################
 
 
-# ####################### Tap to click support for gnome settings ############################
-rm -rf /usr/share/X11/xorg.conf.d/70-synaptics.conf
-sudo -u gdm dbus-launch gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true
-dconf update
-# ############################################################################################
+# # ####################### Tap to click support for gnome settings ############################
+# rm -rf /usr/share/X11/xorg.conf.d/70-synaptics.conf
+# sudo -u gdm dbus-launch gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true
+# dconf update
+# # ############################################################################################
 
 
 # ########### Adding Gnome File Manager(Nautilus) drive mount without password #############
@@ -163,7 +164,7 @@ amixer sset Master unmute
 
 
 # ###########################################################################
-systemctl enable pacman-init.service choose-mirror.service NetworkManager gdm
+systemctl enable pacman-init.service choose-mirror.service NetworkManager
 systemctl enable ntpd bluetooth org.cups.cupsd
 systemctl set-default graphical.target
 # ###########################################################################
