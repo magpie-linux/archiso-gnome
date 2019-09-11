@@ -163,8 +163,9 @@ amixer sset Master unmute
 # #######################
 
 
-# ###########################################################################
-systemctl enable pacman-init.service choose-mirror.service NetworkManager
+# ########################################################
+systemctl enable pacman-init.service choose-mirror.service
+systemctl enable NetworkManager gdm sshd
 systemctl enable ntpd bluetooth org.cups.cupsd
 systemctl set-default graphical.target
-# ###########################################################################
+# ########################################################
