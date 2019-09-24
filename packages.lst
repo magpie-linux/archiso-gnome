@@ -121,6 +121,8 @@ gdm3setup
 dconf
 gconf
 nautilus-share
+# lightdm
+# lightdm-gtk-greeter
 
 ## Multimedia
 
