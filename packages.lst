@@ -105,7 +105,6 @@ intel-tbb
 ## Wayland
 
 wayland
-weston
 wayland-protocols
 glfw-wayland
 qt5-wayland
