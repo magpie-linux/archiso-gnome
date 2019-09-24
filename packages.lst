@@ -153,6 +153,7 @@ virtualbox-guest-modules-arch
 ## Essential Packages
 
 adobe-source-code-pro-fonts
+ttf-cascadia-code
 bleachbit
 cups
 chrome-gnome-shell
