@@ -6,9 +6,9 @@
   "name": "Window List", 
   "settings-schema": "org.gnome.shell.extensions.window-list", 
   "shell-version": [
-    "3.32"
+    "3.34"
   ], 
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions", 
   "uuid": "window-list@gnome-shell-extensions.gcampax.github.com", 
-  "version": 27
+  "version": 28
 }

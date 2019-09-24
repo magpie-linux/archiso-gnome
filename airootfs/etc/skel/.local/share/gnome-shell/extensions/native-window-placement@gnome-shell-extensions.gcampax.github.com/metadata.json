@@ -9,9 +9,9 @@
   ], 
   "settings-schema": "org.gnome.shell.extensions.native-window-placement", 
   "shell-version": [
-    "3.32"
+    "3.34"
   ], 
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions", 
   "uuid": "native-window-placement@gnome-shell-extensions.gcampax.github.com", 
-  "version": 40
+  "version": 41
 }

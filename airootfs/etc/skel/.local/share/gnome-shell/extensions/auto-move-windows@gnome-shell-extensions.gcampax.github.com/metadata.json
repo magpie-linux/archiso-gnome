@@ -10,9 +10,9 @@
   ], 
   "settings-schema": "org.gnome.shell.extensions.auto-move-windows", 
   "shell-version": [
-    "3.32"
+    "3.34"
   ], 
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions", 
   "uuid": "auto-move-windows@gnome-shell-extensions.gcampax.github.com", 
-  "version": 39
+  "version": 40
 }

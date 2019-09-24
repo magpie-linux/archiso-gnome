@@ -9,9 +9,9 @@
     "debarshir@gnome.org"
   ], 
   "shell-version": [
-    "3.32"
+    "3.34"
   ], 
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions", 
   "uuid": "apps-menu@gnome-shell-extensions.gcampax.github.com", 
-  "version": 41
+  "version": 42
 }

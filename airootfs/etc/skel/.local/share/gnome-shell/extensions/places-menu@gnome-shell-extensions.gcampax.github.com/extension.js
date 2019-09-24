@@ -3,6 +3,7 @@
 
 const { Clutter, GObject, St } = imports.gi;
 
+const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -11,38 +12,38 @@ const Gettext = imports.gettext.domain('gnome-shell-extensions');
 const _ = Gettext.gettext;
 const N_ = x => x;
 
-const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const PlaceDisplay = Me.imports.placeDisplay;
 
 const PLACE_ICON_SIZE = 16;
 
+var PlaceMenuItem = GObject.registerClass(
 class PlaceMenuItem extends PopupMenu.PopupBaseMenuItem {
-    constructor(info) {
-        super();
+    _init(info) {
+        super._init();
         this._info = info;
 
         this._icon = new St.Icon({
             gicon: info.icon,
-            icon_size: PLACE_ICON_SIZE
+            icon_size: PLACE_ICON_SIZE,
         });
-        this.actor.add_child(this._icon);
+        this.add_child(this._icon);
 
         this._label = new St.Label({ text: info.name, x_expand: true });
-        this.actor.add_child(this._label);
+        this.add_child(this._label);
 
         if (info.isRemovable()) {
             this._ejectIcon = new St.Icon({
                 icon_name: 'media-eject-symbolic',
-                style_class: 'popup-menu-icon'
+                style_class: 'popup-menu-icon',
             });
             this._ejectButton = new St.Button({ child: this._ejectIcon });
             this._ejectButton.connect('clicked', info.eject.bind(info));
-            this.actor.add_child(this._ejectButton);
+            this.add_child(this._ejectButton);
         }
 
         this._changedId = info.connect('changed',
-                                       this._propertiesChanged.bind(this));
+            this._propertiesChanged.bind(this));
     }
 
     destroy() {
@@ -64,13 +65,13 @@ class PlaceMenuItem extends PopupMenu.PopupBaseMenuItem {
         this._icon.gicon = info.icon;
         this._label.text = info.name;
     }
-}
+});
 
 const SECTIONS = [
     'special',
     'devices',
     'bookmarks',
-    'network'
+    'network',
 ];
 
 let PlacesMenu = GObject.registerClass(
@@ -82,7 +83,7 @@ class PlacesMenu extends PanelMenu.Button {
         let label = new St.Label({
             text: _('Places'),
             y_expand: true,
-            y_align: Clutter.ActorAlign.CENTER
+            y_align: Clutter.ActorAlign.CENTER,
         });
         hbox.add_child(label);
         hbox.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
@@ -133,11 +134,11 @@ function init() {
 let _indicator;
 
 function enable() {
-    _indicator = new PlacesMenu;
+    _indicator = new PlacesMenu();
 
-    let pos = 1;
+    let pos = Main.sessionMode.panel.left.indexOf('appMenu');
     if ('apps-menu' in Main.panel.statusArea)
-        pos = 2;
+        pos++;
     Main.panel.addToStatusArea('places-menu', _indicator, pos, 'left');
 }
 

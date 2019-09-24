@@ -2,18 +2,18 @@
 /* exported init enable disable */
 
 const {
-    Atk, Clutter, Gio, GLib, GMenu, GObject, Gtk, Meta, Shell, St
+    Atk, Clutter, Gio, GLib, GMenu, GObject, Gtk, Meta, Shell, St,
 } = imports.gi;
+const Signals = imports.signals;
+
 const DND = imports.ui.dnd;
+const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
-const Signals = imports.signals;
 
 const Gettext = imports.gettext.domain('gnome-shell-extensions');
 const _ = Gettext.gettext;
-
-const ExtensionUtils = imports.misc.extensionUtils;
 
 const appSys = Shell.AppSystem.get_default();
 
@@ -25,50 +25,37 @@ const NAVIGATION_REGION_OVERSHOOT = 50;
 Gio._promisify(Gio._LocalFilePrototype, 'query_info_async', 'query_info_finish');
 Gio._promisify(Gio._LocalFilePrototype, 'set_attributes_async', 'set_attributes_finish');
 
-class ActivitiesMenuItem extends PopupMenu.PopupBaseMenuItem {
-    constructor(button) {
-        super();
-        this._button = button;
-        this.actor.add_child(new St.Label({ text: _('Activities Overview') }));
-    }
-
-    activate(event) {
-        this._button.menu.toggle();
-        Main.overview.toggle();
-        super.activate(event);
-    }
-}
-
+var ApplicationMenuItem = GObject.registerClass(
 class ApplicationMenuItem extends PopupMenu.PopupBaseMenuItem {
-    constructor(button, app) {
-        super();
+    _init(button, app) {
+        super._init();
         this._app = app;
         this._button = button;
 
         this._iconBin = new St.Bin();
-        this.actor.add_child(this._iconBin);
+        this.add_child(this._iconBin);
 
         let appLabel = new St.Label({
             text: app.get_name(),
             y_expand: true,
-            y_align: Clutter.ActorAlign.CENTER
+            y_align: Clutter.ActorAlign.CENTER,
         });
-        this.actor.add_child(appLabel);
-        this.actor.label_actor = appLabel;
+        this.add_child(appLabel);
+        this.label_actor = appLabel;
 
         let textureCache = St.TextureCache.get_default();
         let iconThemeChangedId = textureCache.connect('icon-theme-changed',
-                                                      this._updateIcon.bind(this));
-        this.actor.connect('destroy', () => {
+            this._updateIcon.bind(this));
+        this.connect('destroy', () => {
             textureCache.disconnect(iconThemeChangedId);
         });
         this._updateIcon();
 
-        this.actor._delegate = this;
-        let draggable = DND.makeDraggable(this.actor);
+        this._delegate = this;
+        let draggable = DND.makeDraggable(this);
 
         let maybeStartDrag = draggable._maybeStartDrag;
-        draggable._maybeStartDrag = (event) => {
+        draggable._maybeStartDrag = event => {
             if (this._dragEnabled)
                 return maybeStartDrag.call(draggable, event);
             return false;
@@ -80,6 +67,8 @@ class ApplicationMenuItem extends PopupMenu.PopupBaseMenuItem {
         this._button.selectCategory(null);
         this._button.menu.toggle();
         super.activate(event);
+
+        Main.overview.hide();
     }
 
     setActive(active, params) {
@@ -88,8 +77,8 @@ class ApplicationMenuItem extends PopupMenu.PopupBaseMenuItem {
         super.setActive(active, params);
     }
 
-    setDragEnabled(enable) {
-        this._dragEnabled = enable;
+    setDragEnabled(enabled) {
+        this._dragEnabled = enabled;
     }
 
     getDragActor() {
@@ -101,13 +90,16 @@ class ApplicationMenuItem extends PopupMenu.PopupBaseMenuItem {
     }
 
     _updateIcon() {
-        this._iconBin.set_child(this.getDragActor());
+        let icon = this.getDragActor();
+        icon.style_class = 'icon-dropshadow';
+        this._iconBin.set_child(icon);
     }
-}
+});
 
+var CategoryMenuItem = GObject.registerClass(
 class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
-    constructor(button, category) {
-        super();
+    _init(button, category) {
+        super._init();
         this._category = category;
         this._button = button;
 
@@ -120,8 +112,9 @@ class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
         else
             name = _('Favorites');
 
-        this.actor.add_child(new St.Label({ text: name }));
-        this.actor.connect('motion-event', this._onMotionEvent.bind(this));
+        this.add_child(new St.Label({ text: name }));
+        this.connect('motion-event', this._onMotionEvent.bind(this));
+        this.connect('notify::active', this._onActiveChanged.bind(this));
     }
 
     activate(event) {
@@ -131,9 +124,9 @@ class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
     }
 
     _isNavigatingSubmenu([x, y]) {
-        let [posX, posY] = this.actor.get_transformed_position();
+        let [posX, posY] = this.get_transformed_position();
 
-        if (this._oldX == -1) {
+        if (this._oldX === -1) {
             this._oldX = x;
             this._oldY = y;
             return true;
@@ -146,11 +139,11 @@ class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
         this._oldY = y;
 
         // If it lies outside the x-coordinates then it is definitely outside.
-        if (posX > x || posX + this.actor.width < x)
+        if (posX > x || posX + this.width < x)
             return false;
 
         // If it lies inside the menu item then it is definitely inside.
-        if (posY <= y && posY + this.actor.height >= y)
+        if (posY <= y && posY + this.height >= y)
             return true;
 
         // We want the keep-up triangle only if the movement is more
@@ -171,37 +164,38 @@ class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
         // only check for triangle ABC.
         if (posY > y) {
             let offset = posY - y;
-            y = posY + this.actor.height + offset;
+            y = posY + this.height + offset;
         }
 
         // Ensure that A is (0, 0).
         x -= posX;
-        y -= posY + this.actor.height;
+        y -= posY + this.height;
 
         // Check which side of line AB the point P lies on by taking the
         // cross-product of AB and AP. See:
         // http://stackoverflow.com/questions/3461453/determine-which-side-of-a-line-a-point-lies
-        if (((this.actor.width * y) - (NAVIGATION_REGION_OVERSHOOT * x)) <= 0)
+        if (this.width * y - NAVIGATION_REGION_OVERSHOOT * x <= 0)
             return true;
 
         return false;
     }
 
     _onMotionEvent(actor, event) {
-        if (!Clutter.get_pointer_grab()) {
+        let device = event.get_device();
+        if (!device.get_grabbed_actor()) {
             this._oldX = -1;
             this._oldY = -1;
-            Clutter.grab_pointer(this.actor);
+            device.grab(this);
         }
-        this.actor.hover = true;
+        this.hover = true;
 
         if (this._isNavigatingSubmenu(event.get_coords()))
             return true;
 
         this._oldX = -1;
         this._oldY = -1;
-        this.actor.hover = false;
-        Clutter.ungrab_pointer();
+        this.hover = false;
+        device.ungrab();
 
         let source = event.get_source();
         if (source instanceof St.Widget)
@@ -210,14 +204,14 @@ class CategoryMenuItem extends PopupMenu.PopupBaseMenuItem {
         return false;
     }
 
-    setActive(active, params) {
-        if (active) {
-            this._button.selectCategory(this._category);
-            this._button.scrollToCatButton(this);
-        }
-        super.setActive(active, params);
+    _onActiveChanged() {
+        if (!this.active)
+            return;
+
+        this._button.selectCategory(this._category);
+        this._button.scrollToCatButton(this);
     }
-}
+});
 
 class ApplicationsMenu extends PopupMenu.PopupMenu {
     constructor(sourceActor, arrowAlignment, arrowSide, button) {
@@ -229,28 +223,9 @@ class ApplicationsMenu extends PopupMenu.PopupMenu {
         return false;
     }
 
-    open(animate) {
-        this._button.hotCorner.setBarrierSize(0);
-        if (this._button.hotCorner.actor) // fallback corner
-            this._button.hotCorner.actor.hide();
-        super.open(animate);
-    }
-
-    close(animate) {
-        let size = Main.layoutManager.panelBox.height;
-        this._button.hotCorner.setBarrierSize(size);
-        if (this._button.hotCorner.actor) // fallback corner
-            this._button.hotCorner.actor.show();
-        super.close(animate);
-    }
-
     toggle() {
-        if (this.isOpen) {
+        if (this.isOpen)
             this._button.selectCategory(null);
-        } else {
-            if (Main.overview.visible)
-                Main.overview.hide();
-        }
         super.toggle();
     }
 }
@@ -262,7 +237,7 @@ class DesktopTarget {
 
         this._windowAddedId =
             global.window_group.connect('actor-added',
-                                        this._onWindowAdded.bind(this));
+                this._onWindowAdded.bind(this));
 
         global.get_window_actors().forEach(a => {
             this._onWindowAdded(a.get_parent(), a);
@@ -270,14 +245,14 @@ class DesktopTarget {
     }
 
     get hasDesktop() {
-        return this._desktop != null;
+        return this._desktop !== null;
     }
 
     _onWindowAdded(group, actor) {
         if (!(actor instanceof Meta.WindowActor))
             return;
 
-        if (actor.meta_window.get_window_type() == Meta.WindowType.DESKTOP)
+        if (actor.meta_window.get_window_type() === Meta.WindowType.DESKTOP)
             this._setDesktop(actor);
     }
 
@@ -322,8 +297,8 @@ class DesktopTarget {
 
             // Hack: force nautilus to reload file info
             info = new Gio.FileInfo();
-            info.set_attribute_uint64(Gio.FILE_ATTRIBUTE_TIME_ACCESS,
-                                      GLib.get_real_time());
+            info.set_attribute_uint64(
+                Gio.FILE_ATTRIBUTE_TIME_ACCESS, GLib.get_real_time());
             try {
                 await file.set_attributes_async(info, queryFlags, ioPriority, null);
             } catch (e) {
@@ -393,7 +368,7 @@ class ApplicationsButton extends PanelMenu.Button {
         this._label = new St.Label({
             text: _('Applications'),
             y_expand: true,
-            y_align: Clutter.ActorAlign.CENTER
+            y_align: Clutter.ActorAlign.CENTER,
         });
         hbox.add_child(this._label);
         hbox.add_child(PopupMenu.arrowIcon(St.Side.BOTTOM));
@@ -402,16 +377,14 @@ class ApplicationsButton extends PanelMenu.Button {
         this.name = 'panelApplications';
         this.label_actor = this._label;
 
-        this.connect('captured-event', this._onCapturedEvent.bind(this));
-
         this._showingId = Main.overview.connect('showing', () => {
-            this.add_accessible_state (Atk.StateType.CHECKED);
+            this.add_accessible_state(Atk.StateType.CHECKED);
         });
         this._hidingId = Main.overview.connect('hiding', () => {
-            this.remove_accessible_state (Atk.StateType.CHECKED);
+            this.remove_accessible_state(Atk.StateType.CHECKED);
         });
         Main.layoutManager.connect('startup-complete',
-                                   this._setKeybinding.bind(this));
+            this._setKeybinding.bind(this));
         this._setKeybinding();
 
         this._desktopTarget = new DesktopTarget();
@@ -426,14 +399,14 @@ class ApplicationsButton extends PanelMenu.Button {
 
         this._tree = new GMenu.Tree({ menu_basename: 'applications.menu' });
         this._treeChangedId = this._tree.connect('changed',
-                                                 this._onTreeChanged.bind(this));
+            this._onTreeChanged.bind(this));
 
         this._applicationsButtons = new Map();
         this.reloadFlag = false;
         this._createLayout();
         this._display();
         this._installedChangedId = appSys.connect('installed-changed',
-                                                  this._onTreeChanged.bind(this));
+            this._onTreeChanged.bind(this));
     }
 
     _onTreeChanged() {
@@ -445,49 +418,38 @@ class ApplicationsButton extends PanelMenu.Button {
         }
     }
 
-    get hotCorner() {
-        return Main.layoutManager.hotCorners[Main.layoutManager.primaryIndex];
-    }
-
     _createVertSeparator() {
         let separator = new St.DrawingArea({
             style_class: 'calendar-vertical-separator',
-            pseudo_class: 'highlighted'
+            pseudo_class: 'highlighted',
         });
         separator.connect('repaint', this._onVertSepRepaint.bind(this));
         return separator;
     }
 
     _onDestroy() {
+        super._onDestroy();
+
         Main.overview.disconnect(this._showingId);
         Main.overview.disconnect(this._hidingId);
         appSys.disconnect(this._installedChangedId);
         this._tree.disconnect(this._treeChangedId);
         this._tree = null;
 
-        let handler = Main.sessionMode.hasOverview ?
-            Main.overview.toggle.bind(Main.overview) : null;
         Main.wm.setCustomKeybindingHandler('panel-main-menu',
-                                           Shell.ActionMode.NORMAL |
-                                           Shell.ActionMode.OVERVIEW,
-                                           handler);
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+            Main.sessionMode.hasOverview
+                ? Main.overview.toggle.bind(Main.overview)
+                : null);
 
         this._desktopTarget.destroy();
     }
 
-    _onCapturedEvent(actor, event) {
-        if (event.type() == Clutter.EventType.BUTTON_PRESS) {
-            if (!Main.overview.shouldToggleByCornerOrButton())
-                return true;
-        }
-        return false;
-    }
-
     _onMenuKeyPress(actor, event) {
         let symbol = event.get_key_symbol();
-        if (symbol == Clutter.KEY_Left || symbol == Clutter.KEY_Right) {
-            let direction = symbol == Clutter.KEY_Left ?
-                Gtk.DirectionType.LEFT : Gtk.DirectionType.RIGHT;
+        if (symbol === Clutter.KEY_Left || symbol === Clutter.KEY_Right) {
+            let direction = symbol === Clutter.KEY_Left
+                ? Gtk.DirectionType.LEFT : Gtk.DirectionType.RIGHT;
             if (this.menu.actor.navigate_focus(global.stage.key_focus, direction, false))
                 return true;
         }
@@ -522,9 +484,8 @@ class ApplicationsButton extends PanelMenu.Button {
 
     _setKeybinding() {
         Main.wm.setCustomKeybindingHandler('panel-main-menu',
-                                           Shell.ActionMode.NORMAL |
-                                           Shell.ActionMode.OVERVIEW,
-                                           () => this.menu.toggle());
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+            () => this.menu.toggle());
     }
 
     _redisplay() {
@@ -536,8 +497,8 @@ class ApplicationsButton extends PanelMenu.Button {
     _loadCategory(categoryId, dir) {
         let iter = dir.iter();
         let nextType;
-        while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-            if (nextType == GMenu.TreeItemType.ENTRY) {
+        while ((nextType = iter.next()) !== GMenu.TreeItemType.INVALID) {
+            if (nextType === GMenu.TreeItemType.ENTRY) {
                 let entry = iter.get_entry();
                 let id;
                 try {
@@ -550,9 +511,9 @@ class ApplicationsButton extends PanelMenu.Button {
                     app = new Shell.App({ app_info: entry.get_app_info() });
                 if (app.get_app_info().should_show())
                     this.applicationsByCategory[categoryId].push(app);
-            } else if (nextType == GMenu.TreeItemType.SEPARATOR) {
+            } else if (nextType === GMenu.TreeItemType.SEPARATOR) {
                 this.applicationsByCategory[categoryId].push('separator');
-            } else if (nextType == GMenu.TreeItemType.DIRECTORY) {
+            } else if (nextType === GMenu.TreeItemType.DIRECTORY) {
                 let subdir = iter.get_directory();
                 if (!subdir.get_is_nodisplay())
                     this._loadCategory(categoryId, subdir);
@@ -565,13 +526,13 @@ class ApplicationsButton extends PanelMenu.Button {
         let appsScrollBoxAlloc = this.applicationsScrollBox.get_allocation_box();
         let currentScrollValue = appsScrollBoxAdj.get_value();
         let boxHeight = appsScrollBoxAlloc.y2 - appsScrollBoxAlloc.y1;
-        let buttonAlloc = button.actor.get_allocation_box();
+        let buttonAlloc = button.get_allocation_box();
         let newScrollValue = currentScrollValue;
         if (currentScrollValue > buttonAlloc.y1 - 10)
             newScrollValue = buttonAlloc.y1 - 10;
         if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
             newScrollValue = buttonAlloc.y2 - boxHeight + 10;
-        if (newScrollValue != currentScrollValue)
+        if (newScrollValue !== currentScrollValue)
             appsScrollBoxAdj.set_value(newScrollValue);
     }
 
@@ -580,13 +541,13 @@ class ApplicationsButton extends PanelMenu.Button {
         let catsScrollBoxAlloc = this.categoriesScrollBox.get_allocation_box();
         let currentScrollValue = catsScrollBoxAdj.get_value();
         let boxHeight = catsScrollBoxAlloc.y2 - catsScrollBoxAlloc.y1;
-        let buttonAlloc = button.actor.get_allocation_box();
+        let buttonAlloc = button.get_allocation_box();
         let newScrollValue = currentScrollValue;
         if (currentScrollValue > buttonAlloc.y1 - 10)
             newScrollValue = buttonAlloc.y1 - 10;
         if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
             newScrollValue = buttonAlloc.y2 - boxHeight + 10;
-        if (newScrollValue != currentScrollValue)
+        if (newScrollValue !== currentScrollValue)
             catsScrollBoxAdj.set_value(newScrollValue);
     }
 
@@ -599,7 +560,7 @@ class ApplicationsButton extends PanelMenu.Button {
             x_fill: true,
             y_fill: false,
             y_align: St.Align.START,
-            style_class: 'apps-menu vfade'
+            style_class: 'apps-menu vfade',
         });
         this.applicationsScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
         let vscroll = this.applicationsScrollBox.get_vscroll_bar();
@@ -613,25 +574,17 @@ class ApplicationsButton extends PanelMenu.Button {
             x_fill: true,
             y_fill: false,
             y_align: St.Align.START,
-            style_class: 'vfade'
+            style_class: 'vfade',
         });
         this.categoriesScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
         vscroll = this.categoriesScrollBox.get_vscroll_bar();
-        vscroll.connect('scroll-start', () => this.menu.passEvents = true);
-        vscroll.connect('scroll-stop', () => this.menu.passEvents = false);
+        vscroll.connect('scroll-start', () => (this.menu.passEvents = true));
+        vscroll.connect('scroll-stop', () => (this.menu.passEvents = false));
         this.leftBox.add(this.categoriesScrollBox, {
             expand: true,
             x_fill: true,
             y_fill: true,
-            y_align: St.Align.START
-        });
-
-        let activities = new ActivitiesMenuItem(this);
-        this.leftBox.add(activities.actor, {
-            expand: false,
-            x_fill: true,
-            y_fill: false,
-            y_align: St.Align.START
+            y_align: St.Align.START,
         });
 
         this.applicationsBox = new St.BoxLayout({ vertical: true });
@@ -643,12 +596,12 @@ class ApplicationsButton extends PanelMenu.Button {
         this.mainBox.add(this._createVertSeparator(), {
             expand: false,
             x_fill: false,
-            y_fill: true
+            y_fill: true,
         });
         this.mainBox.add(this.applicationsScrollBox, {
             expand: true,
             x_fill: true,
-            y_fill: true
+            y_fill: true,
         });
         section.actor.add_actor(this.mainBox);
     }
@@ -658,16 +611,16 @@ class ApplicationsButton extends PanelMenu.Button {
         this.mainBox.style = 'width: 35em;';
         this.mainBox.hide();
 
-        //Load categories
+        // Load categories
         this.applicationsByCategory = {};
         this._tree.load_sync();
         let root = this._tree.get_root_directory();
         let categoryMenuItem = new CategoryMenuItem(this, null);
-        this.categoriesBox.add_actor(categoryMenuItem.actor);
+        this.categoriesBox.add_actor(categoryMenuItem);
         let iter = root.iter();
         let nextType;
-        while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-            if (nextType != GMenu.TreeItemType.DIRECTORY)
+        while ((nextType = iter.next()) !== GMenu.TreeItemType.INVALID) {
+            if (nextType !== GMenu.TreeItemType.DIRECTORY)
                 continue;
 
             let dir = iter.get_directory();
@@ -678,12 +631,12 @@ class ApplicationsButton extends PanelMenu.Button {
             this.applicationsByCategory[categoryId] = [];
             this._loadCategory(categoryId, dir);
             if (this.applicationsByCategory[categoryId].length > 0) {
-                let categoryMenuItem = new CategoryMenuItem(this, dir);
-                this.categoriesBox.add_actor(categoryMenuItem.actor);
+                categoryMenuItem = new CategoryMenuItem(this, dir);
+                this.categoriesBox.add_actor(categoryMenuItem);
             }
         }
 
-        //Load applications
+        // Load applications
         this._displayButtons(this._listApplications(null));
 
         let themeContext = St.ThemeContext.get_for_stage(global.stage);
@@ -720,8 +673,8 @@ class ApplicationsButton extends PanelMenu.Button {
                 item.setDragEnabled(this._desktopTarget.hasDesktop);
                 this._applicationsButtons.set(app, item);
             }
-            if (!item.actor.get_parent())
-                this.applicationsBox.add_actor(item.actor);
+            if (!item.get_parent())
+                this.applicationsBox.add_actor(item);
         }
     }
 
@@ -731,13 +684,9 @@ class ApplicationsButton extends PanelMenu.Button {
         if (categoryMenuId) {
             applist = this.applicationsByCategory[categoryMenuId];
         } else {
-            applist = new Array();
-            let favorites = global.settings.get_strv('favorite-apps');
-            for (let i = 0; i < favorites.length; i++) {
-                let app = appSys.lookup_app(favorites[i]);
-                if (app)
-                    applist.push(app);
-            }
+            applist = global.settings.get_strv('favorite-apps')
+               .map(id => appSys.lookup_app(id))
+               .filter(app => app);
         }
 
         return applist;
@@ -745,19 +694,16 @@ class ApplicationsButton extends PanelMenu.Button {
 });
 
 let appsMenuButton;
-let activitiesButton;
 
 function enable() {
-    activitiesButton = Main.panel.statusArea['activities'];
-    activitiesButton.container.hide();
     appsMenuButton = new ApplicationsButton();
-    Main.panel.addToStatusArea('apps-menu', appsMenuButton, 1, 'left');
+    let index = Main.sessionMode.panel.left.indexOf('activities') + 1;
+    Main.panel.addToStatusArea('apps-menu', appsMenuButton, index, 'left');
 }
 
 function disable() {
     Main.panel.menuManager.removeMenu(appsMenuButton.menu);
     appsMenuButton.destroy();
-    activitiesButton.container.show();
 }
 
 function init() {

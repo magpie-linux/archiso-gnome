@@ -19,14 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-const { Meta, Shell, St } = imports.gi;
-
-const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
+const { Clutter, Meta, Shell, St } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
+const Main = imports.ui.main;
 
-const MESSAGE_FADE_TIME = 2;
+const MESSAGE_FADE_TIME = 2000;
 
 let text;
 
@@ -41,20 +39,21 @@ function flashMessage(message) {
         Main.uiGroup.add_actor(text);
     }
 
-    Tweener.removeTweens(text);
+    text.remove_all_transitions();
     text.text = message;
 
     text.opacity = 255;
 
     let monitor = Main.layoutManager.primaryMonitor;
-    text.set_position(monitor.x + Math.floor(monitor.width / 2 - text.width / 2),
-                      monitor.y + Math.floor(monitor.height / 2 - text.height / 2));
+    text.set_position(
+        monitor.x + Math.floor(monitor.width / 2 - text.width / 2),
+        monitor.y + Math.floor(monitor.height / 2 - text.height / 2));
 
-    Tweener.addTween(text, {
+    text.ease({
         opacity: 0,
-        time: MESSAGE_FADE_TIME,
-        transition: 'easeOutQuad',
-        onComplete: hideMessage
+        duration: MESSAGE_FADE_TIME,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        onComplete: hideMessage,
     });
 }
 
@@ -65,17 +64,17 @@ let SIZES = [
     [1200, 675],
     [1600, 900],
     [360, 654], // Phone portrait maximized
-    [720, 360] // Phone landscape fullscreen
+    [720, 360], // Phone landscape fullscreen
 ];
 
 function cycleScreenshotSizes(display, window, binding) {
     // Probably this isn't useful with 5 sizes, but you can decrease instead
     // of increase by holding down shift.
     let modifiers = binding.get_modifiers();
-    let backwards = (modifiers & Meta.VirtualModifier.SHIFT_MASK) != 0;
+    let backwards = (modifiers & Meta.VirtualModifier.SHIFT_MASK) !== 0;
 
     // Unmaximize first
-    if (window.get_maximized() != 0)
+    if (window.get_maximized() !== 0)
         window.unmaximize(Meta.MaximizeFlags.BOTH);
 
     let workArea = window.get_work_area_current_monitor();
@@ -98,7 +97,7 @@ function cycleScreenshotSizes(display, window, binding) {
 
         // get the best initial window size
         let error = Math.abs(width - outerRect.width) + Math.abs(height - outerRect.height);
-        if (nearestIndex == null || error < nearestError) {
+        if (nearestIndex === undefined || error < nearestError) {
             nearestIndex = i;
             nearestError = error;
         }
@@ -123,13 +122,13 @@ function cycleScreenshotSizes(display, window, binding) {
 
     let newOuterRect = window.get_frame_rect();
     let message = '%d×%d'.format(
-        (newOuterRect.width / scaleFactor),
-        (newOuterRect.height / scaleFactor));
+        newOuterRect.width / scaleFactor,
+        newOuterRect.height / scaleFactor);
 
     // The new size might have been constrained by geometry hints (e.g. for
     // a terminal) - in that case, include the actual ratio to the message
     // we flash
-    let actualNumerator = (newOuterRect.width / newOuterRect.height) * 9;
+    let actualNumerator = 9 * newOuterRect.width / newOuterRect.height;
     if (Math.abs(actualNumerator - 16) > 0.01)
         message += ' (%.2f:9)'.format(actualNumerator);
 
@@ -137,17 +136,18 @@ function cycleScreenshotSizes(display, window, binding) {
 }
 
 function enable() {
-    Main.wm.addKeybinding('cycle-screenshot-sizes',
-                          ExtensionUtils.getSettings(),
-                          Meta.KeyBindingFlags.PER_WINDOW,
-                          Shell.ActionMode.NORMAL,
-                          cycleScreenshotSizes);
-    Main.wm.addKeybinding('cycle-screenshot-sizes-backward',
-                          ExtensionUtils.getSettings(),
-                          Meta.KeyBindingFlags.PER_WINDOW |
-                          Meta.KeyBindingFlags.IS_REVERSED,
-                          Shell.ActionMode.NORMAL,
-                          cycleScreenshotSizes);
+    Main.wm.addKeybinding(
+        'cycle-screenshot-sizes',
+        ExtensionUtils.getSettings(),
+        Meta.KeyBindingFlags.PER_WINDOW,
+        Shell.ActionMode.NORMAL,
+        cycleScreenshotSizes);
+    Main.wm.addKeybinding(
+        'cycle-screenshot-sizes-backward',
+        ExtensionUtils.getSettings(),
+        Meta.KeyBindingFlags.PER_WINDOW | Meta.KeyBindingFlags.IS_REVERSED,
+        Shell.ActionMode.NORMAL,
+        cycleScreenshotSizes);
 }
 
 function disable() {

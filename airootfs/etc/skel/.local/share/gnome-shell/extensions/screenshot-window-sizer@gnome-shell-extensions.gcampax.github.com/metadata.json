@@ -6,9 +6,9 @@
   "name": "Screenshot Window Sizer", 
   "settings-schema": "org.gnome.shell.extensions.screenshot-window-sizer", 
   "shell-version": [
-    "3.32"
+    "3.34"
   ], 
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions", 
   "uuid": "screenshot-window-sizer@gnome-shell-extensions.gcampax.github.com", 
-  "version": 17
+  "version": 18
 }

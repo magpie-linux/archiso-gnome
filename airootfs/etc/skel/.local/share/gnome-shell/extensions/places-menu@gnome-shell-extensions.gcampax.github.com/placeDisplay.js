@@ -20,8 +20,8 @@ const Hostname1Iface = '<node> \
 const Hostname1 = Gio.DBusProxy.makeProxyWrapper(Hostname1Iface);
 
 class PlaceInfo {
-    constructor() {
-        this._init.apply(this, arguments);
+    constructor(...params) {
+        this._init(...params);
     }
 
     _init(kind, file, name, icon) {
@@ -41,14 +41,14 @@ class PlaceInfo {
     async _ensureMountAndLaunch(context, tryMount) {
         try {
             await this._launchDefaultForUri(this.file.get_uri(), context, null);
-        } catch (e) {
-            if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_MOUNTED)) {
-                Main.notifyError(_('Failed to launch “%s”').format(this.name), e.message);
+        } catch (err) {
+            if (!err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_MOUNTED)) {
+                Main.notifyError(_('Failed to launch “%s”').format(this.name), err.message);
                 return;
             }
 
             let source = {
-                get_icon: () => this.icon
+                get_icon: () => this.icon,
             };
             let op = new ShellMountOperation.ShellMountOperation(source);
             try {
@@ -71,18 +71,21 @@ class PlaceInfo {
     }
 
     getIcon() {
-        this.file.query_info_async('standard::symbolic-icon', 0, 0, null,
-                                   (file, result) => {
-                                       try {
-                                           let info = file.query_info_finish(result);
-                                           this.icon = info.get_symbolic_icon();
-                                           this.emit('changed');
-                                       } catch (e) {
-                                           if (e instanceof Gio.IOErrorEnum)
-                                               return;
-                                           throw e;
-                                       }
-                                   });
+        this.file.query_info_async('standard::symbolic-icon',
+            Gio.FileQueryInfoFlags.NONE,
+            0,
+            null,
+            (file, result) => {
+                try {
+                    let info = file.query_info_finish(result);
+                    this.icon = info.get_symbolic_icon();
+                    this.emit('changed');
+                } catch (e) {
+                    if (e instanceof Gio.IOErrorEnum)
+                        return;
+                    throw e;
+                }
+            });
 
         // return a generic icon for this kind for now, until we have the
         // icon from the query info above
@@ -152,7 +155,7 @@ class RootInfo extends PlaceInfo {
 
             this._proxy = obj;
             this._proxy.connect('g-properties-changed',
-                                this._propertiesChanged.bind(this));
+                this._propertiesChanged.bind(this));
             this._propertiesChanged(obj);
         });
     }
@@ -198,15 +201,16 @@ class PlaceDeviceInfo extends PlaceInfo {
         let unmountArgs = [
             Gio.MountUnmountFlags.NONE,
             (new ShellMountOperation.ShellMountOperation(this._mount)).mountOp,
-            null // Gio.Cancellable
+            null, // Gio.Cancellable
         ];
 
-        if (this._mount.can_eject())
+        if (this._mount.can_eject()) {
             this._mount.eject_with_operation(...unmountArgs,
-                                             this._ejectFinish.bind(this));
-        else
+                this._ejectFinish.bind(this));
+        } else {
             this._mount.unmount_with_operation(...unmountArgs,
-                                               this._unmountFinish.bind(this));
+                this._unmountFinish.bind(this));
+        }
     }
 
     _ejectFinish(mount, result) {
@@ -275,9 +279,8 @@ var PlacesManager = class {
         };
 
         this._settings = new Gio.Settings({ schema_id: BACKGROUND_SCHEMA });
-        this._showDesktopIconsChangedId =
-            this._settings.connect('changed::show-desktop-icons',
-                                   this._updateSpecials.bind(this));
+        this._showDesktopIconsChangedId = this._settings.connect(
+            'changed::show-desktop-icons', this._updateSpecials.bind(this));
         this._updateSpecials();
 
         /*
@@ -319,7 +322,7 @@ var PlacesManager = class {
             'mount-changed',
             'drive-connected',
             'drive-disconnected',
-            'drive-changed'
+            'drive-changed',
         ];
 
         this._volumeMonitorSignals = [];
@@ -350,9 +353,10 @@ var PlacesManager = class {
 
         let homePath = GLib.get_home_dir();
 
-        this._places.special.push(new PlaceInfo('special',
-                                                Gio.File.new_for_path(homePath),
-                                                _('Home')));
+        this._places.special.push(new PlaceInfo(
+            'special',
+            Gio.File.new_for_path(homePath),
+            _('Home')));
 
         let specials = [];
         let dirs = DEFAULT_DIRECTORIES.slice();
@@ -362,7 +366,7 @@ var PlacesManager = class {
 
         for (let i = 0; i < dirs.length; i++) {
             let specialPath = GLib.get_user_special_dir(dirs[i]);
-            if (specialPath == null || specialPath == homePath)
+            if (!specialPath || specialPath === homePath)
                 continue;
 
             let file = Gio.File.new_for_path(specialPath), info;
@@ -394,10 +398,11 @@ var PlacesManager = class {
 
         /* Add standard places */
         this._places.devices.push(new RootInfo());
-        this._places.network.push(new PlaceInfo('network',
-                                                Gio.File.new_for_uri('network:///'),
-                                                _('Browse Network'),
-                                                'network-workgroup-symbolic'));
+        this._places.network.push(new PlaceInfo(
+            'network',
+            Gio.File.new_for_uri('network:///'),
+            _('Browse Network'),
+            'network-workgroup-symbolic'));
 
         /* first go through all connected drives */
         let drives = this._volumeMonitor.get_connected_drives();
@@ -410,7 +415,7 @@ var PlacesManager = class {
                     networkVolumes.push(volumes[j]);
                 } else {
                     let mount = volumes[j].get_mount();
-                    if (mount != null)
+                    if (mount)
                         this._addMount('devices', mount);
                 }
             }
@@ -419,7 +424,7 @@ var PlacesManager = class {
         /* add all volumes that is not associated with a drive */
         let volumes = this._volumeMonitor.get_volumes();
         for (let i = 0; i < volumes.length; i++) {
-            if (volumes[i].get_drive() != null)
+            if (volumes[i].get_drive())
                 continue;
 
             let identifier = volumes[i].get_identifier('class');
@@ -427,7 +432,7 @@ var PlacesManager = class {
                 networkVolumes.push(volumes[i]);
             } else {
                 let mount = volumes[i].get_mount();
-                if (mount != null)
+                if (mount)
                     this._addMount('devices', mount);
             }
         }
@@ -458,9 +463,9 @@ var PlacesManager = class {
             this._addVolume('network', networkVolumes[i]);
         }
 
-        for (let i = 0; i < networkMounts.length; i++) {
+        for (let i = 0; i < networkMounts.length; i++)
             this._addMount('network', networkMounts[i]);
-        }
+
 
         this.emit('devices-updated');
         this.emit('network-updated');
@@ -491,7 +496,7 @@ var PlacesManager = class {
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             let components = line.split(' ');
-            let bookmark = components[0];
+            let [bookmark] = components;
 
             if (!bookmark)
                 continue;
@@ -501,16 +506,16 @@ var PlacesManager = class {
                 continue;
 
             let duplicate = false;
-            for (let i = 0; i < this._places.special.length; i++) {
-                if (file.equal(this._places.special[i].file)) {
+            for (let j = 0; j < this._places.special.length; j++) {
+                if (file.equal(this._places.special[j].file)) {
                     duplicate = true;
                     break;
                 }
             }
             if (duplicate)
                 continue;
-            for (let i = 0; i < bookmarks.length; i++) {
-                if (file.equal(bookmarks[i].file)) {
+            for (let j = 0; j < bookmarks.length; j++) {
+                if (file.equal(bookmarks[j].file)) {
                     duplicate = true;
                     break;
                 }
