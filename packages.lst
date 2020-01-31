@@ -119,7 +119,6 @@ gnome-common
 gdm
 gdm3setup
 dconf
-gconf
 nautilus-share
 # lightdm
 # lightdm-gtk-greeter
@@ -245,7 +244,6 @@ python2-gobject
 kpmcore
 python-nautilus
 python2-psutil
-python2-xapp
 serd
 sord
 sratom

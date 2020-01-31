@@ -61,7 +61,7 @@ class MainWork:
     # noinspection PyMethodMayBeStatic
     def __runCommand(self):
         check: int = os.system('./build.sh -v')
-        if check is 0:
+        if check == 0:
             os.system('chmod 777 ISO_Image ISO_Image/*')
 
     # noinspection PyMethodMayBeStatic
@@ -81,7 +81,7 @@ def clean():
 
 def main():
     arg: list = sys.argv
-    if os.getuid() is 0:
+    if os.getuid() == 0:
         try:
             if len(arg) != 0 and arg[1] == 'clean':
                 clean()
